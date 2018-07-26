@@ -1,0 +1,52 @@
+## call dplyr and tidyr packages into the workspace
+
+install.packages("dplyr")
+library(dplyr)
+install.packages("tidyr")
+library(tidyr)
+
+## read in the initial data
+
+refine = read.csv("refine_original.csv")
+
+## Clean up the brand names
+## gsubfn - look into this
+
+refine2 = refine %>% 
+  mutate(company = as.character(company)) %>%
+  mutate(company = ifelse(grepl("^phil|^phl|^fil", company, ignore.case = TRUE), "philips", company)) %>% 
+  mutate(company = ifelse(grepl("^ak", company, ignore.case = TRUE), "akzo", company)) %>% 
+  mutate(company = ifelse(grepl("^van", company, ignore.case = TRUE), "van houten", company)) %>% 
+  mutate(company = ifelse(grepl("^uni", company, ignore.case = TRUE), "unilever", company))
+
+## Separate product code and product number
+
+refine3 = separate(refine2, col = "Product.code...number", into = c("product_code", "product_number"), sep = "-")
+
+## Add product categories
+
+code = c("p", "v", "x", "q")
+category = c("Smartphone", "TV", "Laptop", "Tablet")
+df = data.frame(code, category)
+refine4 = left_join(refine3, df, by = c("product_code" = "code"))
+
+## Adding new column for the full address
+
+refine5 = refine4 %>%
+  mutate(full_address = paste(address, city, country, sep = ", "))
+
+## Adding dummy variables
+
+refine6 = refine5 %>%
+  mutate(company_philips = ifelse(company == "philips", 1, 0)) %>%
+  mutate(company_akzo = ifelse(company == "akzo", 1, 0)) %>%
+  mutate(company_van_houten = ifelse(company == "van houten", 1, 0)) %>%
+  mutate(company_unilever = ifelse(company == "unilever", 1, 0)) %>%
+  mutate(product_smartphone = ifelse(category == "Smartphone", 1, 0)) %>%
+  mutate(product_tv = ifelse(category == "TV", 1, 0)) %>%
+  mutate(product_laptop = ifelse(category == "Laptop", 1, 0)) %>%
+  mutate(product_tablet = ifelse(category == "Tablet", 1, 0))
+
+## Writes new data to spreadsheet
+
+write.csv(refine6, "refine_clean.csv")

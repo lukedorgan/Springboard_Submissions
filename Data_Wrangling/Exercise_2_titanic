@@ -1,0 +1,48 @@
+## call dplyr and tidyr packages into the workspace
+
+install.packages("dplyr")
+library(dplyr)
+install.packages("tidyr")
+library(tidyr)
+
+## read in the initial data
+
+refine = read.csv("titanic_original.csv")
+
+## cleaning up missing values in embarked column
+
+refine2 = refine %>%
+  mutate(embarked = as.character(embarked)) %>%
+  mutate(embarked = ifelse(is.na(embarked), "S", embarked)) %>%
+  mutate(embarked = ifelse(embarked == "", "S", embarked))
+
+## cleaning up missing values in age
+
+refine3 = refine2 %>%
+  mutate(age = ifelse(is.na(age), mean(age, na.rm = TRUE), age))
+
+## alternative ways to populate age missing values
+## median - eliminates outliers to an extent
+
+## cleaning up missing values in boat
+
+refine4 = refine3 %>%
+  mutate(boat = ifelse(boat == "", "None", boat))
+
+## cleaning up missing values in cabin number
+
+## it doesn't make sense to fill in an arbitrary cabin number for empty values here
+## missing values here could be for crew or for people who weren't allocated a room before boarding
+## also could be staying with other people on board
+## also may be because they died and we hadn't stored that information before they got on the boat
+
+## adding column for has_cabin_number
+
+refine5 = refine4 %>%
+  mutate(has_cabin_number = ifelse(cabin == "", 0, 1))
+
+## why didn't is.na work in the above piece of code?
+
+## Writes new data to spreadsheet
+
+write.csv(refine5, "titanic_clean.csv")
